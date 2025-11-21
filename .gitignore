@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+venv_music_recs/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Logs
+logs/
+*.log
+service_test.log
+execution_log.txt
+
+# CatBoost temporary files
+catboost_info/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (большие файлы - должны быть в S3)
+data/
+recsys/data/
+recsys/recommendations/
+recsys/model/
+
+# Pictures and graphics
+recsys/pictures/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
