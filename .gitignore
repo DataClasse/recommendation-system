@@ -41,15 +41,15 @@ Thumbs.db
 
 # Data files (большие файлы - должны быть в S3)
 data/
-recsys/data/
-recsys/recommendations/
-recsys/model/
+recsys/data/*.parquet
+recsys/data/*.pkl
+recsys/recommendations/*.parquet
+recsys/model/*.pkl
 
 # Pictures and graphics
-recsys/pictures/
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
+recsys/pictures/*.png
+recsys/pictures/*.jpg
+recsys/pictures/*.jpeg
+recsys/pictures/*.gif
+recsys/pictures/*.svg
 
