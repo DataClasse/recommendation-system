@@ -4,6 +4,7 @@
 Хранит последние N прослушанных треков для каждого пользователя в памяти.
 """
 from collections import defaultdict, deque
+import threading
 from fastapi import FastAPI
 
 
@@ -17,6 +18,8 @@ class EventHistory:
         # Используем defaultdict с deque для эффективного хранения
         self.user_events = defaultdict(lambda: deque(maxlen=max_events))
         self.stats = {"total_events": 0, "unique_users": 0}
+        # Блокировка для thread-safe доступа
+        self._lock = threading.Lock()
     
     def add_event(self, user_id: int, track_id: int):
         """
@@ -26,10 +29,11 @@ class EventHistory:
             user_id: Идентификатор пользователя
             track_id: Идентификатор трека
         """
-        # deque автоматически удаляет старые события
-        self.user_events[user_id].append(track_id)
-        self.stats["total_events"] += 1
-        self.stats["unique_users"] = len(self.user_events)
+        with self._lock:
+            # deque автоматически удаляет старые события
+            self.user_events[user_id].append(track_id)
+            self.stats["total_events"] += 1
+            self.stats["unique_users"] = len(self.user_events)
     
     def get_recent_events(self, user_id: int, k: int = 5):
         """
@@ -42,13 +46,16 @@ class EventHistory:
         Returns:
             Список track_id в обратном хронологическом порядке
         """
-        events = list(self.user_events[user_id])
+        with self._lock:
+            events = list(self.user_events[user_id])
         # Возвращаем последние k событий
         return events[-k:][::-1] if events else []
     
     def get_stats(self):
         """Получение статистики."""
-        return self.stats
+        with self._lock:
+            # Возвращаем копию для thread-safety
+            return self.stats.copy()
 
 
 # Глобальное хранилище

@@ -3,6 +3,7 @@
 
 Тестирует все эндпоинты и сохраняет результаты в лог-файл.
 """
+import os
 import requests
 import logging
 import time
@@ -22,10 +23,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# URL сервисов
-API_MAIN_URL = "http://127.0.0.1:8000"
-SIMILARITY_URL = "http://127.0.0.1:8010"
-EVENT_URL = "http://127.0.0.1:8020"
+# Конфигурация через переменные окружения (с дефолтными значениями)
+API_MAIN_URL = os.getenv("API_MAIN_URL", "http://127.0.0.1:8000")
+SIMILARITY_URL = os.getenv("SIMILARITY_URL", "http://127.0.0.1:8010")
+EVENT_URL = os.getenv("EVENT_URL", "http://127.0.0.1:8020")
+
+# Тестовые ID (можно переопределить через переменные окружения)
+TEST_USER_ID = int(os.getenv("TEST_USER_ID", "123456"))
+TEST_USER_ID_2 = int(os.getenv("TEST_USER_ID_2", "789012"))
+TEST_USER_ID_3 = int(os.getenv("TEST_USER_ID_3", "111222"))
+TEST_USER_ID_4 = int(os.getenv("TEST_USER_ID_4", "999888"))
+TEST_TRACK_ID = int(os.getenv("TEST_TRACK_ID", "1000"))
+TEST_TRACK_IDS = [int(x) for x in os.getenv("TEST_TRACK_IDS", "100,200,300").split(",")]
 
 
 def check_service_health(name, url):
@@ -47,8 +56,9 @@ def test_offline_recommendations():
     """Тест офлайн рекомендаций."""
     logger.info("\n=== Тест офлайн рекомендаций ===")
     
-    test_user_id = 123456
+    test_user_id = TEST_USER_ID
     k = 10
+    logger.info(f"Используется test_user_id: {test_user_id}")
     
     try:
         start = time.time()
@@ -78,8 +88,9 @@ def test_online_recommendations():
     """Тест онлайн рекомендаций."""
     logger.info("\n=== Тест онлайн рекомендаций ===")
     
-    test_user_id = 789012
-    test_tracks = [100, 200, 300]
+    test_user_id = TEST_USER_ID_2
+    test_tracks = TEST_TRACK_IDS
+    logger.info(f"Используется test_user_id: {test_user_id}, test_tracks: {test_tracks}")
     
     # Добавляем события
     logger.info("Добавление тестовых событий...")
@@ -126,11 +137,12 @@ def test_combined_recommendations():
     """Тест комбинированных рекомендаций."""
     logger.info("\n=== Тест комбинированных рекомендаций ===")
     
-    test_user_id = 111222
+    test_user_id = TEST_USER_ID_3
     k = 20
     
-    # Добавляем несколько событий для пользователя
-    test_tracks = [1001, 2002, 3003]
+    # Добавляем несколько событий для пользователя (используем другие ID для разнообразия)
+    test_tracks = [x + 1000 for x in TEST_TRACK_IDS]  # Генерируем на основе базовых
+    logger.info(f"Используется test_user_id: {test_user_id}, test_tracks: {test_tracks}")
     for track_id in test_tracks:
         try:
             requests.post(
@@ -179,8 +191,9 @@ def test_similar_tracks():
     """Тест сервиса похожих треков."""
     logger.info("\n=== Тест сервиса похожих треков ===")
     
-    test_track_id = 1000
+    test_track_id = TEST_TRACK_ID
     k = 5
+    logger.info(f"Используется test_track_id: {test_track_id}")
     
     try:
         start = time.time()
@@ -215,8 +228,10 @@ def test_event_storage():
     """Тест сервиса хранения событий."""
     logger.info("\n=== Тест сервиса хранения событий ===")
     
-    test_user_id = 999888
-    test_tracks = [10, 20, 30, 40, 50]
+    test_user_id = TEST_USER_ID_4
+    # Используем другие треки для разнообразия
+    test_tracks = [x * 10 for x in range(1, 6)]  # [10, 20, 30, 40, 50]
+    logger.info(f"Используется test_user_id: {test_user_id}, test_tracks: {test_tracks}")
     
     # Добавляем события
     for track_id in test_tracks:

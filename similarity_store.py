@@ -3,6 +3,7 @@
 
 Предоставляет быстрый доступ к похожим трекам для онлайн-рекомендаций.
 """
+import gc
 import pandas as pd
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -29,17 +30,28 @@ class TrackSimilarity:
         
         # Фильтруем самоподобие (track_id_1 == track_id_2)
         before_count = len(self.similarities)
-        self.similarities = self.similarities[
+        # Создаем отфильтрованный DataFrame
+        filtered_df = self.similarities[
             self.similarities['track_id_1'] != self.similarities['track_id_2']
-        ]
-        filtered_count = before_count - len(self.similarities)
-        if filtered_count > 0:
-            print(f"  Отфильтровано пар самоподобия: {filtered_count}")
+        ].copy()
+        filtered_count = before_count - len(filtered_df)
         
-        self.similarities = self.similarities.set_index('track_id_1')
+        # Очищаем исходный DataFrame
+        del self.similarities
+        gc.collect()
+        
+        # Устанавливаем индекс на отфильтрованном DataFrame
+        self.similarities = filtered_df.set_index('track_id_1')
+        
+        # Очищаем промежуточный DataFrame
+        del filtered_df
+        gc.collect()
+        
         self.track_col = 'track_id_2'
         self.score_col = 'score'
         
+        if filtered_count > 0:
+            print(f"  Отфильтровано пар самоподобия: {filtered_count}")
         print(f"✓ Загружено {len(self.similarities)} связей похожести")
     
     def get_similar_tracks(self, track_id: int, k: int = 10):

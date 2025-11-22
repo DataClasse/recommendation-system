@@ -7,6 +7,8 @@ import pandas as pd
 import requests
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from itertools import zip_longest
+from typing import Dict, List, Tuple
 
 
 # Конфигурация
@@ -61,12 +63,10 @@ class MusicRecommender:
         Рекомендации уже отсортированы по rank при загрузке.
         """
         try:
-            user_recs = self.personal_recs.loc[user_id]
-            # Если несколько строк - берем первые k по rank
-            if isinstance(user_recs, pd.Series):
-                recs = [user_recs["track_id"]]
-            else:
-                recs = user_recs["track_id"].tolist()[:k]
+            # Используем двойные скобки для гарантии DataFrame
+            user_recs = self.personal_recs.loc[[user_id]]
+            # Всегда получаем список (даже для одной рекомендации)
+            recs = user_recs["track_id"].tolist()[:k]
             self.request_stats["personal"] += 1
             return recs
         except KeyError:
@@ -111,21 +111,23 @@ def merge_recommendations(online_recs, offline_recs, k: int = 100):
     """
     Объединение онлайн и офлайн рекомендаций с чередованием.
     Удаляет дубликаты с сохранением порядка.
+    
+    Логика чередования: равномерное распределение элементов
+    из обоих списков, затем удаление дубликатов.
     """
     merged = []
-    min_len = min(len(online_recs), len(offline_recs))
     
-    # Чередование (векторная операция через zip)
-    for online_item, offline_item in zip(online_recs[:min_len], 
-                                          offline_recs[:min_len]):
-        merged.append(online_item)
-        merged.append(offline_item)
+    # Равномерное чередование с обработкой разных длин списков
+    # zip_longest заполняет недостающие значения None
+    for online_item, offline_item in zip_longest(
+        online_recs, offline_recs, fillvalue=None
+    ):
+        if online_item is not None:
+            merged.append(online_item)
+        if offline_item is not None:
+            merged.append(offline_item)
     
-    # Добавляем остатки
-    merged.extend(online_recs[min_len:])
-    merged.extend(offline_recs[min_len:])
-    
-    # Удаление дубликатов с сохранением порядка (векторная операция)
+    # Удаление дубликатов с сохранением порядка
     seen = set()
     unique_recs = []
     for item in merged:
@@ -223,10 +225,33 @@ async def get_online_recommendations(user_id: int, k: int = 100):
     return {"recs": []}
 
 
+# Кэш для часто запрашиваемых пользователей
+_recommendation_cache: Dict[Tuple[int, int], List[int]] = {}
+_MAX_CACHE_SIZE = 1000
+
+
+def _get_cache_key(user_id: int, k: int) -> Tuple[int, int]:
+    """Получение ключа кэша."""
+    return (user_id, k)
+
+
+def _clear_cache_if_needed():
+    """Очистка кэша при превышении максимального размера."""
+    global _recommendation_cache
+    if len(_recommendation_cache) > _MAX_CACHE_SIZE:
+        # Удаляем половину старейших записей (FIFO)
+        items_to_remove = len(_recommendation_cache) // 2
+        cache_keys = list(_recommendation_cache.keys())[:items_to_remove]
+        for key in cache_keys:
+            del _recommendation_cache[key]
+
+
 @app.post("/recommendations")
 async def get_recommendations(user_id: int, k: int = 100):
     """
     Получение комбинированных рекомендаций (онлайн + офлайн).
+    
+    Использует кэширование для часто запрашиваемых пользователей.
     
     Args:
         user_id: Идентификатор пользователя
@@ -235,6 +260,12 @@ async def get_recommendations(user_id: int, k: int = 100):
     Returns:
         Список ID треков
     """
+    cache_key = _get_cache_key(user_id, k)
+    
+    # Проверка кэша
+    if cache_key in _recommendation_cache:
+        return {"recs": _recommendation_cache[cache_key]}
+    
     # Получаем оба типа рекомендаций
     offline_result = await get_offline_recommendations(user_id, k)
     online_result = await get_online_recommendations(user_id, k)
@@ -244,12 +275,16 @@ async def get_recommendations(user_id: int, k: int = 100):
     
     # Если нет онлайн истории - возвращаем только офлайн
     if not online_recs:
-        return {"recs": offline_recs}
+        result = offline_recs
+    else:
+        # Объединяем рекомендации
+        result = merge_recommendations(online_recs, offline_recs, k)
     
-    # Объединяем рекомендации
-    merged_recs = merge_recommendations(online_recs, offline_recs, k)
+    # Сохраняем в кэш
+    _clear_cache_if_needed()
+    _recommendation_cache[cache_key] = result
     
-    return {"recs": merged_recs}
+    return {"recs": result}
 
 
 if __name__ == "__main__":
