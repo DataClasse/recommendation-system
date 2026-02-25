@@ -19,7 +19,7 @@ cd recommendation-system
 ## Структура проекта
 
 ```
-mle-project-sprint-4-v001/
+recommendation-system/
 ├── data/                          # Исходные данные
 │   ├── tracks.parquet
 │   ├── catalog_names.parquet
