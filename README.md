@@ -8,11 +8,11 @@
 ## Клонирование репозитория
 
 ```bash
-git clone https://github.com/your-username/mle-project-sprint-4-v001.git
-cd mle-project-sprint-4-v001
+git clone https://github.com/DataClasse/recommendation-system.git
+cd recommendation-system
 ```
 
-**Примечание:** Замените `your-username` на ваш GitHub username или используйте реальную ссылку на ваш репозиторий.
+Репозиторий: [https://github.com/DataClasse/recommendation-system](https://github.com/DataClasse/recommendation-system)
 
 ## Структура проекта
 
