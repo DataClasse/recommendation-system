@@ -10,16 +10,16 @@
 ## Клонирование репозитория
 
 ```bash
-git clone https://github.com/DataClasse/recommendation-system.git
-cd recommendation-system
+git clone https://github.com/DataClasse/music-recommender.git
+cd music-recommender
 ```
 
-Репозиторий: [https://github.com/DataClasse/recommendation-system](https://github.com/DataClasse/recommendation-system)
+Репозиторий: [https://github.com/DataClasse/music-recommender](https://github.com/DataClasse/music-recommender)
 
 ## Структура проекта
 
 ```
-recommendation-system/
+music-recommender/
 ├── data/                          # Исходные данные
 │   ├── tracks.parquet
 │   ├── catalog_names.parquet
